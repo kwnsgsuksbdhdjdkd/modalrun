@@ -1,0 +1,99 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║         📦 FILES TO UPLOAD TO MODAL NOTEBOOK                       ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+🔥 CRITICAL: RE-UPLOAD ALL FILES!
+
+Your Modal notebook is running OLD versions of the files.
+The UPDATED files are on your Windows computer at:
+C:\Users\Nesar\Documents\modalexe\
+
+═══════════════════════════════════════════════════════════════════
+
+📁 UPLOAD THESE 5 FILES:
+
+From: C:\Users\Nesar\Documents\modalexe\
+To:   /root/comfyui-api/ (in Modal notebook)
+
+1. ✅ notebook_comfyui_api.py       (Main API server)
+2. ✅ start_with_ngrok.py           (Public URL launcher - UPDATED!)
+3. ✅ config.json                   (Discord webhook)
+4. ✅ notebook_setup.sh             (Setup script)
+5. ✅ diagnose_modal.py             (NEW! Diagnostic tool)
+
+═══════════════════════════════════════════════════════════════════
+
+🔧 WHAT'S BEEN FIXED:
+
+start_with_ngrok.py:
+   ✅ Auto-configures ngrok token
+   ✅ Fixes URL display (no more "NgrokTunnel: ..." garbage)
+   ✅ Better error handling
+
+diagnose_modal.py:
+   ✅ NEW! Checks your entire setup
+   ✅ Tells you exactly what's wrong
+   ✅ Provides fix commands
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 AFTER UPLOADING:
+
+Step 1: Run diagnostics
+   !cd /root/comfyui-api && python diagnose_modal.py
+
+Step 2: Fix any issues it reports
+
+Step 3: Start the API
+   !cd /root/comfyui-api && python start_with_ngrok.py
+
+Step 4: Check Discord for your URL! 📬
+
+═══════════════════════════════════════════════════════════════════
+
+💡 WHY YOU'RE GETTING ERRORS:
+
+1. ❌ URL still showing "NgrokTunnel: ..."
+   → You're running the OLD start_with_ngrok.py
+   → Re-upload the UPDATED version!
+
+2. ❌ "Connection refused" error
+   → ComfyUI not starting
+   → Run diagnose_modal.py to find out why
+
+3. ❌ "SyntaxError: invalid decimal literal"
+   → Trying to run shell commands in Python cell
+   → Use ! prefix: !ngrok config ...
+   → OR just use updated files (they auto-configure!)
+
+═══════════════════════════════════════════════════════════════════
+
+📖 DOCUMENTATION:
+
+Read these files for help:
+- MODAL_COMPLETE_SETUP.md      Complete step-by-step guide
+- JUPYTER_NOTEBOOK_INSTRUCTIONS.md   Jupyter-specific tips
+- README_NOTEBOOK.md            Full documentation
+
+═══════════════════════════════════════════════════════════════════
+
+✅ VERIFICATION:
+
+After uploading, verify in Modal terminal:
+
+cd /root/comfyui-api
+ls -la
+
+You should see all 5 files listed above!
+
+Then check the file was updated:
+grep "tunnel.public_url" start_with_ngrok.py
+
+Should show: "public_url = tunnel.public_url"
+
+If it shows something else, the file didn't upload correctly!
+
+═══════════════════════════════════════════════════════════════════
+

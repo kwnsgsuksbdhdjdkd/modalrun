@@ -1,0 +1,132 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║  🎨 ComfyUI API for Modal Notebooks - QUICK START                 ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+📦 WHAT YOU HAVE:
+   A complete, ready-to-run ComfyUI API that works directly in Modal 
+   notebooks. Just copy these files, run one command, and you'll have 
+   a public API for AI image generation!
+
+🎯 YOUR GOAL:
+   Paste this project into Modal.com notebook at:
+   /root/ComfyUI/custom_nodes/ComfyUI-Manager (or any directory)
+   Then run it to get a public API URL.
+
+═══════════════════════════════════════════════════════════════════
+
+📁 FILES TO UPLOAD TO MODAL NOTEBOOK:
+
+Required:
+   ✅ notebook_comfyui_api.py      Main API server
+   ✅ start_with_ngrok.py          Public URL launcher
+   ✅ notebook_setup.sh            Setup script
+
+Optional:
+   📄 config.json                  Your Discord webhook (already set)
+   📄 README_NOTEBOOK.md           Full documentation
+   📄 NOTEBOOK_SETUP.md            Detailed setup guide
+   📄 NOTEBOOK_QUICK_START.txt     This file
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 HOW TO RUN (3 EASY STEPS):
+
+Step 1: Upload Files to Modal Notebook
+   ├─ Open your Modal.com notebook
+   ├─ Create directory: mkdir -p /root/comfyui-api
+   ├─ Navigate: cd /root/comfyui-api
+   └─ Upload the files listed above
+
+Step 2: Run Setup (one time)
+   bash notebook_setup.sh
+
+Step 3: Start the API
+   python start_with_ngrok.py
+
+   OUTPUT:
+   ✅ ngrok tunnel created!
+   🌍 PUBLIC URL: https://abc123.ngrok-free.app
+   📬 Discord notification sent!
+
+   YOU'LL GET:
+   - Public HTTPS URL
+   - Discord message with the URL
+   - API ready to generate images!
+
+═══════════════════════════════════════════════════════════════════
+
+🎨 TEST IT:
+
+curl -X POST https://YOUR-URL/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "a beautiful sunset"}' \
+  --output sunset.png
+
+═══════════════════════════════════════════════════════════════════
+
+📋 REQUIREMENTS:
+
+Before running, make sure you have:
+   ✅ Modal.com notebook running
+   ✅ ComfyUI installed at /root/ComfyUI
+   ✅ At least one model in /root/ComfyUI/models/checkpoints/
+
+If you don't have a model, the setup script will offer to download one!
+
+═══════════════════════════════════════════════════════════════════
+
+💡 TIPS:
+
+1. First time? Run the setup script:
+   bash notebook_setup.sh
+
+2. Want public access? Use:
+   python start_with_ngrok.py
+
+3. Local only? Use:
+   python notebook_comfyui_api.py
+
+4. Need help? Read:
+   cat README_NOTEBOOK.md
+
+5. Discord notifications are already configured with your webhook!
+
+═══════════════════════════════════════════════════════════════════
+
+🔧 COMMON ISSUES:
+
+Problem: "No models found"
+Fix: Run setup script, it will download for you
+
+Problem: "Port already in use"
+Fix: pkill -f "main.py" && pkill -9 ngrok
+
+Problem: "ComfyUI won't start"
+Fix: Make sure /root/ComfyUI exists and is set up correctly
+
+═══════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION:
+
+Quick Start:     NOTEBOOK_QUICK_START.txt (this file)
+Full Guide:      README_NOTEBOOK.md
+Setup Details:   NOTEBOOK_SETUP.md
+Main Project:    README.md (for local deployment)
+
+═══════════════════════════════════════════════════════════════════
+
+🎉 YOU'RE READY!
+
+Just upload these files to your Modal notebook and run:
+
+   cd /root/comfyui-api
+   python start_with_ngrok.py
+
+Your API will be live in ~30 seconds! Check Discord for the URL! 📬
+
+═══════════════════════════════════════════════════════════════════
+
+Made with ❤️ for AI Art | Your Discord webhook is already configured!
+

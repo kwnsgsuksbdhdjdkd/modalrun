@@ -1,0 +1,103 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║         📦 FILES TO UPLOAD TO MODAL.COM NOTEBOOK                   ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+Upload these files from your local folder:
+C:\Users\Nesar\Documents\modalexe
+
+To your Modal notebook directory (create it first):
+/root/comfyui-api
+
+═══════════════════════════════════════════════════════════════════
+
+✅ REQUIRED FILES (Must upload these):
+
+   1. notebook_comfyui_api.py      - Main API server
+   2. start_with_ngrok.py          - Public URL launcher
+   3. notebook_setup.sh            - Setup automation script
+   4. config.json                  - Your Discord webhook (pre-configured)
+
+═══════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION FILES (Recommended):
+
+   5. README.md                    - Main documentation
+   6. README_NOTEBOOK.md           - Full notebook guide
+   7. NOTEBOOK_SETUP.md            - Detailed setup instructions
+   8. NOTEBOOK_QUICK_START.txt     - Quick reference
+   9. models_guide.md              - Model management guide
+  10. UPLOAD_TO_MODAL.txt          - This file
+
+═══════════════════════════════════════════════════════════════════
+
+📁 OPTIONAL FILES:
+
+   11. requirements.txt            - Python dependencies list
+   12. workflows/                  - Custom ComfyUI workflows folder
+
+═══════════════════════════════════════════════════════════════════
+
+🚫 DO NOT UPLOAD:
+
+   ❌ ComfyUI/                     - Already installed in Modal
+   ❌ Any .git folders             - Not needed
+   ❌ Any __pycache__ folders      - Not needed
+
+═══════════════════════════════════════════════════════════════════
+
+📋 UPLOAD CHECKLIST:
+
+Step 1: Open your Modal.com notebook
+   └─ https://modal.com/
+
+Step 2: Create directory in notebook terminal:
+   mkdir -p /root/comfyui-api
+   cd /root/comfyui-api
+
+Step 3: Upload the 4 REQUIRED files listed above
+
+Step 4: Make setup script executable:
+   chmod +x notebook_setup.sh
+
+Step 5: Run setup:
+   bash notebook_setup.sh
+
+Step 6: Start the API:
+   python start_with_ngrok.py
+
+Step 7: Check Discord for your URL! 📬
+
+═══════════════════════════════════════════════════════════════════
+
+✨ WHAT YOU'LL GET:
+
+   🌍 Public HTTPS URL (via ngrok)
+   📬 Discord notification with API URL
+   🎨 REST API for image generation
+   ✅ Working in ~30 seconds!
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 AFTER UPLOAD, RUN THIS:
+
+cd /root/comfyui-api
+python start_with_ngrok.py
+
+═══════════════════════════════════════════════════════════════════
+
+💡 QUICK TIP:
+
+Your Discord webhook is already configured in all the files!
+Just upload and run - no additional configuration needed!
+
+═══════════════════════════════════════════════════════════════════
+
+Need help? Read:
+- NOTEBOOK_QUICK_START.txt (quick reference)
+- README.md (main guide)
+- NOTEBOOK_SETUP.md (detailed setup)
+
+═══════════════════════════════════════════════════════════════════
+

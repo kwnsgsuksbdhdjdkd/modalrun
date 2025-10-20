@@ -1,0 +1,19 @@
+{
+  "discord_webhook": "https://discord.com/api/webhooks/1429488694498295899/soU4ivZA_7-bQ4TU2NMsp_8bLLPw0Gf1Qx9UB0Dh-wS5cLQ03n17ivQr0ijqRqheiehw",
+  "gpu_type": "t4",
+  "comfyui_version": "v0.2.2",
+  "models": [
+    {
+      "name": "flux1-schnell.safetensors",
+      "category": "checkpoints",
+      "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors",
+      "description": "FLUX.1 Schnell - Fast diffusion model"
+    }
+  ],
+  "default_workflow": {
+    "description": "Default FLUX workflow",
+    "path": "workflows/flux_workflow.json"
+  }
+}
+
+

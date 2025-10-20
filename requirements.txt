@@ -1,0 +1,13 @@
+# Requirements for ComfyUI API in Modal Notebooks
+
+# API Server
+flask>=2.3.0
+
+# HTTP Client
+requests>=2.31.0
+
+# Public URL Tunneling
+pyngrok>=6.0.0
+
+# Note: These are installed automatically by notebook_setup.sh
+# You can also install manually with: pip install -r requirements.txt
