@@ -54,7 +54,7 @@ DEFAULT_WORKFLOW = {
     },
     "4": {
         "inputs": {
-            "ckpt_name": "flux1-krea-dev.safetensors"
+            "ckpt_name": "flux1-schnell.safetensors"
         },
         "class_type": "CheckpointLoaderSimple"
     },
@@ -191,14 +191,39 @@ def wait_for_completion(prompt_id):
             history = response.json()
             
             if prompt_id in history:
-                outputs = history[prompt_id].get("outputs", {})
-                for node_id, node_output in outputs.items():
-                    if "images" in node_output:
-                        return node_output["images"][0]
-        except:
-            pass
+                prompt_data = history[prompt_id]
+                
+                # Check for errors in execution
+                status = prompt_data.get("status", {})
+                if "status_str" in status and status["status_str"] == "error":
+                    log(f"❌ ComfyUI execution error detected!")
+                    log(f"   Error details: {json.dumps(status, indent=2)}")
+                    return {"error": status, "prompt_id": prompt_id}
+                
+                # Check if there are error messages
+                if "messages" in status and status["messages"]:
+                    log(f"⚠️  ComfyUI messages: {status['messages']}")
+                
+                # Check for outputs
+                outputs = prompt_data.get("outputs", {})
+                if outputs:
+                    for node_id, node_output in outputs.items():
+                        if "images" in node_output:
+                            return node_output["images"][0]
+        except Exception as e:
+            log(f"⚠️  Error checking history: {e}")
         
         time.sleep(1)
+    
+    # Timeout - try to get the last known status
+    try:
+        response = requests.get(f"http://localhost:{PORT}/history/{prompt_id}")
+        history = response.json()
+        if prompt_id in history:
+            log(f"⚠️  Timeout! Last known status:")
+            log(f"   {json.dumps(history[prompt_id].get('status', {}), indent=2)}")
+    except:
+        pass
     
     return None
 

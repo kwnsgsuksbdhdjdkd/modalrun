@@ -177,23 +177,36 @@ The setup script will install:
 
 ## 🐛 Troubleshooting
 
-### "ComfyUI failed to start"
+### ⚠️ **Image Generation Timeout?**
+
+If you're getting timeout errors after 300 seconds:
+
+1. **Quick Fix:** Read [QUICK_FIX.md](QUICK_FIX.md)
+2. **Detailed Guide:** See [TROUBLESHOOTING_GENERATION_TIMEOUT.md](TROUBLESHOOTING_GENERATION_TIMEOUT.md)
+3. **Run Diagnostic:** `python check_comfyui_errors.py`
+
+### Common Issues
+
+**"ComfyUI failed to start"**
 ```bash
 pkill -f "main.py"  # Kill existing process
 python start_with_ngrok.py  # Try again
 ```
 
-### "Model not found"
+**"Model not found"**
 ```bash
 # Check models
+python check_comfyui_errors.py
+
+# OR manually check:
 ls /root/ComfyUI/models/checkpoints/
 
-# Download FLUX
+# Download FLUX if missing
 cd /root/ComfyUI/models/checkpoints/
 wget https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors
 ```
 
-### "Port already in use"
+**"Port already in use"**
 ```bash
 lsof -ti:5000 | xargs kill -9
 lsof -ti:8188 | xargs kill -9
