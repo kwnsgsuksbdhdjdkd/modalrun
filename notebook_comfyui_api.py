@@ -301,17 +301,16 @@ def handle_disconnect():
         import traceback
         log(traceback.format_exc())
 
-@socketio.on('generate_image')
-def handle_generate_image(data):
-    """Handle real-time image generation request via WebSocket"""
+def _handle_generation_request(data, event_name):
+    """Common handler for generation requests (used by both 'generate' and 'generate_image')"""
     try:
-        log(f"🔔 RAW EVENT RECEIVED: generate_image")
+        log(f"🔔 RAW EVENT RECEIVED: {event_name}")
         log(f"📦 Raw data received: {data}")
         log(f"📦 Data type: {type(data)}")
         
         # Validate data
         if not data:
-            log(f"⚠️ No data received in generate_image event")
+            log(f"⚠️ No data received in {event_name} event")
             emit('generation_error', {
                 'status': 'error',
                 'error': 'No data provided',
@@ -335,6 +334,7 @@ def handle_generate_image(data):
         log(f"👤 User session ID: {connected_users.get(user_id, 'NOT FOUND')}")
         
         # Run generation in background thread to keep socket alive
+        log(f"🚀 Starting background generation thread...")
         threading.Thread(target=generate_and_emit, args=(user_id, prompt), daemon=True).start()
         
         # Send immediate acknowledgment
@@ -345,9 +345,10 @@ def handle_generate_image(data):
             'prompt': prompt
         })
         log(f"✅ Sent generation_started acknowledgment to user {user_id[:8]}...")
+        log(f"✅ Generation task queued for background processing")
         
     except Exception as e:
-        log(f"❌ Error in generate_image handler: {e}")
+        log(f"❌ Error in {event_name} handler: {e}")
         import traceback
         log(traceback.format_exc())
         emit('generation_error', {
@@ -355,6 +356,16 @@ def handle_generate_image(data):
             'error': str(e),
             'message': 'Failed to process generation request'
         })
+
+@socketio.on('generate_image')
+def handle_generate_image(data):
+    """Handle real-time image generation request via WebSocket (event: generate_image)"""
+    _handle_generation_request(data, 'generate_image')
+
+@socketio.on('generate')
+def handle_generate(data):
+    """Handle real-time image generation request via WebSocket (event: generate)"""
+    _handle_generation_request(data, 'generate')
 
 def generate_and_emit(user_id, prompt):
     """Generate image and emit to specific user"""
