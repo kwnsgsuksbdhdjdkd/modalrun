@@ -1,5 +1,5 @@
 """
-ComfyUI API Server for Modal Notebooks
+ComfyUI API Server for Modal Notebooks with SocketIO Support
 Paste this file into your Modal notebook and run it!
 
 Usage in Modal Notebook:
@@ -13,8 +13,11 @@ import uuid
 import requests
 import subprocess
 import time
+import threading
+import base64
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file
+from flask_socketio import SocketIO, emit
 
 # Force unbuffered output so logs show immediately in Modal
 sys.stdout.reconfigure(line_buffering=True)
@@ -34,6 +37,12 @@ API_PORT = 5000
 sys.path.insert(0, COMFYUI_DIR)
 
 app = Flask(__name__)
+
+# Initialize SocketIO with CORS support for ngrok URLs
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+# Track connected users {user_id: session_id}
+connected_users = {}
 
 # Default FLUX workflow
 DEFAULT_WORKFLOW = {
@@ -242,6 +251,125 @@ def wait_for_completion(prompt_id):
     
     return None
 
+# ============================================
+# SocketIO Event Handlers
+# ============================================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    user_id = str(uuid.uuid4())
+    connected_users[user_id] = request.sid
+    emit('connected', {'user_id': user_id, 'message': 'Connected to ComfyUI API'})
+    log(f"✅ WebSocket connected: User {user_id[:8]}... (sid: {request.sid})")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    # Find and remove user
+    for uid, sid in list(connected_users.items()):
+        if sid == request.sid:
+            del connected_users[uid]
+            log(f"❌ WebSocket disconnected: User {uid[:8]}...")
+            break
+
+@socketio.on('generate_image')
+def handle_generate_image(data):
+    """Handle real-time image generation request via WebSocket"""
+    user_id = data.get('user_id')
+    prompt = data.get('prompt', 'a beautiful landscape')
+    
+    log(f"🎨 SocketIO generation request from user {user_id[:8]}...: '{prompt}'")
+    
+    # Run generation in background thread to keep socket alive
+    threading.Thread(target=generate_and_emit, args=(user_id, prompt), daemon=True).start()
+    
+    # Send immediate acknowledgment
+    emit('generation_started', {
+        'status': 'started',
+        'message': f'Generating image for: "{prompt}"',
+        'estimated_time': '40-70 seconds'
+    })
+
+def generate_and_emit(user_id, prompt):
+    """Generate image and emit to specific user"""
+    try:
+        log(f"⌛ Starting generation for user {user_id[:8]}...")
+        
+        # Update workflow with prompt
+        workflow = DEFAULT_WORKFLOW.copy()
+        if "6" in workflow:
+            workflow["6"]["inputs"]["text"] = prompt
+        
+        # Queue the prompt
+        result = queue_prompt(workflow)
+        if not result or "prompt_id" not in result:
+            raise Exception("Failed to queue prompt")
+        
+        prompt_id = result["prompt_id"]
+        log(f"✅ Queued prompt {prompt_id} for user {user_id[:8]}...")
+        
+        # Send progress update
+        sid = connected_users.get(user_id)
+        if sid:
+            socketio.emit('generation_progress', {
+                'status': 'processing',
+                'message': 'Image is being generated...',
+                'prompt_id': prompt_id
+            }, to=sid)
+        
+        # Wait for completion
+        start_time = time.time()
+        image_info = wait_for_completion(prompt_id)
+        elapsed = time.time() - start_time
+        
+        if not image_info:
+            raise Exception("Generation timeout or failed")
+        
+        # Get the image
+        image_data = get_image(
+            image_info["filename"],
+            image_info.get("subfolder", ""),
+            image_info.get("type", "output")
+        )
+        
+        log(f"✅ Image generated in {elapsed:.1f}s for user {user_id[:8]}...")
+        
+        # Option 1: Send as base64 (works without external hosting)
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
+        # Send to specific user
+        if sid:
+            socketio.emit('image_ready', {
+                'status': 'complete',
+                'image_data': f'data:image/png;base64,{image_base64}',
+                'prompt': prompt,
+                'generation_time': elapsed,
+                'size_bytes': len(image_data)
+            }, to=sid)
+            log(f"📤 Sent image to user {user_id[:8]}... via SocketIO")
+        else:
+            log(f"⚠️ User {user_id[:8]}... disconnected before image was ready")
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        log(f"❌ Error generating for user {user_id[:8]}...: {e}")
+        log(error_trace)
+        
+        # Send error to user
+        sid = connected_users.get(user_id)
+        if sid:
+            socketio.emit('generation_error', {
+                'status': 'error',
+                'error': str(e),
+                'message': 'Failed to generate image'
+            }, to=sid)
+
+# ============================================
+# REST API Routes
+# ============================================
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -403,8 +531,8 @@ def main():
     log("\n🔍 Watching for requests... (logs will appear below)")
     log("="*60 + "\n")
     
-    # Start Flask app with more verbose output
-    app.run(host='0.0.0.0', port=API_PORT, debug=False, use_reloader=False)
+    # Start Flask app with SocketIO support
+    socketio.run(app, host='0.0.0.0', port=API_PORT, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
 
 if __name__ == "__main__":
     main()
