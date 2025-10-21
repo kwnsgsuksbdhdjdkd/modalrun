@@ -259,8 +259,8 @@
             addLog('👤 User ID: ' + userId);
             addLog('📝 Prompt: ' + prompt);
 
-            // Send the generate_image event
-            socket.emit('generate_image', {
+            // Send the generate event (also supports 'generate_image')
+            socket.emit('generate', {
                 user_id: userId,
                 prompt: prompt
             });
