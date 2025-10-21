@@ -16,8 +16,8 @@ import time
 from pathlib import Path
 
 # ⚠️ REPLACE THESE WITH YOUR HUGGINGFACE CREDENTIALS!
-HF_USERNAME = "ebinesar00005"
-HF_TOKEN = "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"
+HF_USERNAME = "YOUR_HF_USERNAME_HERE"
+HF_TOKEN = "YOUR_HF_TOKEN_HERE"
 
 # Directories
 COMFYUI_DIR = "/root/ComfyUI"
@@ -139,15 +139,30 @@ def download_flux_krea_model():
     
     temp_path = Path(temp_dir)
     
+    # Create unet directory
+    unet_dir = f"{COMFYUI_DIR}/models/unet"
+    Path(unet_dir).mkdir(parents=True, exist_ok=True)
+    
     for file in temp_path.glob("*.safetensors"):
-        if "clip" in file.name.lower():
-            dest = Path(CLIP_DIR) / file.name
-        elif "vae" in file.name.lower():
-            dest = Path(VAE_DIR) / file.name
-        else:
-            dest = Path(CHECKPOINTS_DIR) / file.name
+        # Check filename to determine destination
+        filename_lower = file.name.lower()
         
-        print(f"📁 Moving {file.name} -> {dest.parent.name}/")
+        if "clip" in filename_lower or "t5" in filename_lower:
+            dest = Path(CLIP_DIR) / file.name
+            dest_folder = "clip"
+        elif "ae" in filename_lower or "vae" in filename_lower:
+            dest = Path(VAE_DIR) / file.name
+            dest_folder = "vae"
+        elif "flux" in filename_lower or "unet" in filename_lower:
+            # FLUX models go to unet folder
+            dest = Path(unet_dir) / file.name
+            dest_folder = "unet"
+        else:
+            # Default to checkpoints (shouldn't happen)
+            dest = Path(CHECKPOINTS_DIR) / file.name
+            dest_folder = "checkpoints"
+        
+        print(f"📁 Moving {file.name} -> {dest_folder}/")
         subprocess.run(["mv", str(file), str(dest)])
     
     print("\n🧹 Cleaning up temporary files...")
