@@ -286,14 +286,15 @@ def handle_connect():
         log(traceback.format_exc())
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(reason=None):
     """Handle client disconnection"""
     try:
         # Find and remove user
+        disconnect_reason = f" (reason: {reason})" if reason else ""
         for uid, sid in list(connected_users.items()):
             if sid == request.sid:
                 del connected_users[uid]
-                log(f"❌ WebSocket disconnected: User {uid[:8]}...")
+                log(f"❌ WebSocket disconnected: User {uid[:8]}...{disconnect_reason}")
                 log(f"📊 Remaining connected users: {len(connected_users)}")
                 break
     except Exception as e:
@@ -401,6 +402,30 @@ def generate_and_emit(user_id, prompt):
         
         if not image_info:
             raise Exception("Generation timeout or failed")
+        
+        # Check if ComfyUI returned an error
+        if "error" in image_info:
+            error_details = image_info.get("error", {})
+            error_msg = "ComfyUI execution failed"
+            
+            # Try to extract useful error message
+            if "messages" in error_details:
+                for msg in error_details.get("messages", []):
+                    if isinstance(msg, list) and len(msg) > 1:
+                        if msg[0] == "execution_error":
+                            error_data = msg[1]
+                            exception_msg = error_data.get("exception_message", "Unknown error")
+                            node_type = error_data.get("node_type", "Unknown")
+                            error_msg = f"ComfyUI error in {node_type}: {exception_msg}"
+                            break
+            
+            log(f"❌ ComfyUI execution error: {error_msg}")
+            raise Exception(error_msg)
+        
+        # Check if we have a filename (successful generation)
+        if "filename" not in image_info:
+            log(f"❌ No filename in image_info. Got: {image_info}")
+            raise Exception("Image generation failed - no filename returned")
         
         # Get the image
         image_data = get_image(
