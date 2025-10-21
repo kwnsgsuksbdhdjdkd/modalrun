@@ -1,5 +1,6 @@
 """
 Start ComfyUI API with ngrok for public access
+Supports both REST API and WebSocket (SocketIO) connections
 Run this in your Modal notebook for a public URL
 """
 
