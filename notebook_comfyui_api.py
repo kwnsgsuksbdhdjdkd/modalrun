@@ -258,38 +258,87 @@ def wait_for_completion(prompt_id):
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
-    user_id = str(uuid.uuid4())
-    connected_users[user_id] = request.sid
-    emit('connected', {'user_id': user_id, 'message': 'Connected to ComfyUI API'})
-    log(f"✅ WebSocket connected: User {user_id[:8]}... (sid: {request.sid})")
+    try:
+        user_id = str(uuid.uuid4())
+        connected_users[user_id] = request.sid
+        emit('connected', {'user_id': user_id, 'message': 'Connected to ComfyUI API'})
+        log(f"✅ WebSocket connected: User {user_id[:8]}... (sid: {request.sid})")
+        log(f"📊 Total connected users: {len(connected_users)}")
+    except Exception as e:
+        log(f"❌ Error in connect handler: {e}")
+        import traceback
+        log(traceback.format_exc())
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle client disconnection"""
-    # Find and remove user
-    for uid, sid in list(connected_users.items()):
-        if sid == request.sid:
-            del connected_users[uid]
-            log(f"❌ WebSocket disconnected: User {uid[:8]}...")
-            break
+    try:
+        # Find and remove user
+        for uid, sid in list(connected_users.items()):
+            if sid == request.sid:
+                del connected_users[uid]
+                log(f"❌ WebSocket disconnected: User {uid[:8]}...")
+                log(f"📊 Remaining connected users: {len(connected_users)}")
+                break
+    except Exception as e:
+        log(f"❌ Error in disconnect handler: {e}")
+        import traceback
+        log(traceback.format_exc())
 
 @socketio.on('generate_image')
 def handle_generate_image(data):
     """Handle real-time image generation request via WebSocket"""
-    user_id = data.get('user_id')
-    prompt = data.get('prompt', 'a beautiful landscape')
-    
-    log(f"🎨 SocketIO generation request from user {user_id[:8]}...: '{prompt}'")
-    
-    # Run generation in background thread to keep socket alive
-    threading.Thread(target=generate_and_emit, args=(user_id, prompt), daemon=True).start()
-    
-    # Send immediate acknowledgment
-    emit('generation_started', {
-        'status': 'started',
-        'message': f'Generating image for: "{prompt}"',
-        'estimated_time': '40-70 seconds'
-    })
+    try:
+        log(f"🔔 RAW EVENT RECEIVED: generate_image")
+        log(f"📦 Raw data received: {data}")
+        log(f"📦 Data type: {type(data)}")
+        
+        # Validate data
+        if not data:
+            log(f"⚠️ No data received in generate_image event")
+            emit('generation_error', {
+                'status': 'error',
+                'error': 'No data provided',
+                'message': 'Please provide prompt and user_id'
+            })
+            return
+        
+        user_id = data.get('user_id') if isinstance(data, dict) else None
+        prompt = data.get('prompt', 'a beautiful landscape') if isinstance(data, dict) else 'a beautiful landscape'
+        
+        if not user_id:
+            log(f"⚠️ No user_id in data. Data keys: {data.keys() if isinstance(data, dict) else 'N/A'}")
+            emit('generation_error', {
+                'status': 'error',
+                'error': 'Missing user_id',
+                'message': 'user_id is required'
+            })
+            return
+        
+        log(f"🎨 SocketIO generation request from user {user_id[:8]}...: '{prompt}'")
+        log(f"👤 User session ID: {connected_users.get(user_id, 'NOT FOUND')}")
+        
+        # Run generation in background thread to keep socket alive
+        threading.Thread(target=generate_and_emit, args=(user_id, prompt), daemon=True).start()
+        
+        # Send immediate acknowledgment
+        emit('generation_started', {
+            'status': 'started',
+            'message': f'Generating image for: "{prompt}"',
+            'estimated_time': '40-70 seconds',
+            'prompt': prompt
+        })
+        log(f"✅ Sent generation_started acknowledgment to user {user_id[:8]}...")
+        
+    except Exception as e:
+        log(f"❌ Error in generate_image handler: {e}")
+        import traceback
+        log(traceback.format_exc())
+        emit('generation_error', {
+            'status': 'error',
+            'error': str(e),
+            'message': 'Failed to process generation request'
+        })
 
 def generate_and_emit(user_id, prompt):
     """Generate image and emit to specific user"""
