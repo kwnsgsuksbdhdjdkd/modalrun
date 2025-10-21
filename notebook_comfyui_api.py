@@ -6,6 +6,10 @@ Usage in Modal Notebook:
     python notebook_comfyui_api.py
 """
 
+# CRITICAL: Eventlet monkey patching MUST be first, before any other imports
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sys
 import json
@@ -254,6 +258,18 @@ def wait_for_completion(prompt_id):
 # ============================================
 # SocketIO Event Handlers
 # ============================================
+
+# Catch-all event handler for debugging
+@socketio.on_error_default
+def default_error_handler(e):
+    log(f"❌ SocketIO Error: {e}")
+    import traceback
+    log(traceback.format_exc())
+
+# Catch ANY event that isn't explicitly handled
+@socketio.on('*')
+def catch_all(event, data):
+    log(f"🔔 CATCH-ALL: Received event '{event}' with data: {data}")
 
 @socketio.on('connect')
 def handle_connect():
@@ -550,8 +566,15 @@ def get_notebook_url():
 def main():
     """Main function to start the server"""
     log("=" * 60)
-    log("🎨 ComfyUI API Server for Modal Notebooks")
+    log("🎨 ComfyUI API Server for Modal Notebooks with SocketIO")
     log("=" * 60)
+    
+    # Log registered SocketIO event handlers
+    log("\n🔌 SocketIO Event Handlers Registered:")
+    for event in socketio.handlers:
+        if event in socketio.handlers and socketio.handlers[event]:
+            log(f"   ✅ '{event}' handler registered")
+    log("")
     
     # Start ComfyUI
     if not start_comfyui():
