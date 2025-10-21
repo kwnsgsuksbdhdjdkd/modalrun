@@ -17,7 +17,7 @@ from pathlib import Path
 
 # ⚠️ REPLACE THESE WITH YOUR HUGGINGFACE CREDENTIALS!
 HF_USERNAME = "ebinesar00005"
-HF_TOKEN = "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"
+HF_TOKEN = "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"
 
 # Directories
 COMFYUI_DIR = "/root/ComfyUI"
