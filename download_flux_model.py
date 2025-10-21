@@ -16,8 +16,8 @@ import time
 from pathlib import Path
 
 # ⚠️ REPLACE THESE WITH YOUR HUGGINGFACE CREDENTIALS!
-HF_USERNAME = "YOUR_HF_USERNAME_HERE"
-HF_TOKEN = "YOUR_HF_TOKEN_HERE"
+HF_USERNAME = "ebinesar00005"
+HF_TOKEN = "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"
 
 # Directories
 COMFYUI_DIR = "/root/ComfyUI"
