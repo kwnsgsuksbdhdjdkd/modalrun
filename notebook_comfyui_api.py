@@ -45,7 +45,7 @@ DEFAULT_WORKFLOW = {
             "sampler_name": "euler",
             "scheduler": "simple",
             "denoise": 1,
-            "model": ["4", 0],
+            "model": ["10", 0],
             "positive": ["6", 0],
             "negative": ["7", 0],
             "latent_image": ["5", 0]
@@ -54,9 +54,11 @@ DEFAULT_WORKFLOW = {
     },
     "4": {
         "inputs": {
-            "ckpt_name": "flux1-krea-dev.safetensors"
+            "clip_name1": "clip_l.safetensors",
+            "clip_name2": "t5xxl_fp16.safetensors",
+            "type": "flux"
         },
-        "class_type": "CheckpointLoaderSimple"
+        "class_type": "DualCLIPLoader"
     },
     "5": {
         "inputs": {
@@ -69,23 +71,36 @@ DEFAULT_WORKFLOW = {
     "6": {
         "inputs": {
             "text": "a beautiful landscape",
-            "clip": ["4", 1]
+            "clip": ["4", 0]
         },
         "class_type": "CLIPTextEncode"
     },
     "7": {
         "inputs": {
             "text": "",
-            "clip": ["4", 1]
+            "clip": ["4", 0]
         },
         "class_type": "CLIPTextEncode"
     },
     "8": {
         "inputs": {
             "samples": ["3", 0],
-            "vae": ["4", 2]
+            "vae": ["11", 0]
         },
         "class_type": "VAEDecode"
+    },
+    "10": {
+        "inputs": {
+            "unet_name": "flux1-krea-dev.safetensors",
+            "weight_dtype": "default"
+        },
+        "class_type": "UNETLoader"
+    },
+    "11": {
+        "inputs": {
+            "vae_name": "ae.safetensors"
+        },
+        "class_type": "VAELoader"
     },
     "9": {
         "inputs": {
