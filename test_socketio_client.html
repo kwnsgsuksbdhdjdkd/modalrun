@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI SocketIO Test Client</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.generating {
+            background: #fff3cd;
+            color: #856404;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #generatedImage {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log div {
+            margin: 5px 0;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 ComfyUI SocketIO Test Client</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Replace YOUR_NGROK_URL below with your actual ngrok URL<br>
+            2. The connection will happen automatically<br>
+            3. Enter a prompt and click "Generate Image"
+        </div>
+
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+
+        <input type="text" id="serverUrl" placeholder="Enter your ngrok URL (e.g., https://abc123.ngrok-free.app)" value="">
+        <button onclick="connectToServer()">Connect to Server</button>
+
+        <input type="text" id="promptInput" placeholder="Enter your prompt (e.g., a beautiful sunset over mountains)" disabled>
+        <button id="generateBtn" onclick="generateImage()" disabled>Generate Image</button>
+
+        <div id="generatedImageContainer"></div>
+
+        <div class="log" id="log">
+            <div>📋 Connection logs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let userId = null;
+        let isGenerating = false;
+
+        function addLog(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(text, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = text;
+            statusDiv.className = 'status ' + className;
+        }
+
+        function connectToServer() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            
+            if (!serverUrl) {
+                alert('Please enter your ngrok URL');
+                return;
+            }
+
+            addLog('🔄 Connecting to ' + serverUrl + '...');
+            updateStatus('🔄 Connecting...', 'disconnected');
+
+            // Disconnect existing socket if any
+            if (socket) {
+                socket.disconnect();
+            }
+
+            // Connect to the server
+            socket = io(serverUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
+
+            // Connection successful
+            socket.on('connected', (data) => {
+                userId = data.user_id;
+                addLog('✅ Connected! User ID: ' + userId);
+                addLog('📝 Message: ' + data.message);
+                updateStatus('✅ Connected (User: ' + userId.substring(0, 8) + '...)', 'connected');
+                
+                // Enable input fields
+                document.getElementById('promptInput').disabled = false;
+                document.getElementById('generateBtn').disabled = false;
+            });
+
+            // Connection error
+            socket.on('connect_error', (error) => {
+                addLog('❌ Connection error: ' + error.message);
+                updateStatus('❌ Connection Failed', 'disconnected');
+            });
+
+            // Disconnected
+            socket.on('disconnect', (reason) => {
+                addLog('❌ Disconnected: ' + reason);
+                updateStatus('❌ Disconnected', 'disconnected');
+                document.getElementById('promptInput').disabled = true;
+                document.getElementById('generateBtn').disabled = true;
+            });
+
+            // Generation started
+            socket.on('generation_started', (data) => {
+                addLog('🎨 Generation started: ' + data.message);
+                addLog('⏱️ Estimated time: ' + data.estimated_time);
+                updateStatus('🎨 Generating: ' + data.prompt, 'generating');
+            });
+
+            // Generation progress
+            socket.on('generation_progress', (data) => {
+                addLog('⏳ Progress: ' + data.message);
+                if (data.prompt_id) {
+                    addLog('📋 Prompt ID: ' + data.prompt_id);
+                }
+            });
+
+            // Image ready
+            socket.on('image_ready', (data) => {
+                addLog('✅ Image ready! Generation time: ' + data.generation_time.toFixed(1) + 's');
+                addLog('📦 Image size: ' + (data.size_bytes / 1024 / 1024).toFixed(2) + ' MB');
+                
+                // Display the image
+                const container = document.getElementById('generatedImageContainer');
+                container.innerHTML = `
+                    <h3>Generated Image:</h3>
+                    <p><strong>Prompt:</strong> ${data.prompt}</p>
+                    <img id="generatedImage" src="${data.image_data}" alt="Generated Image">
+                `;
+                
+                updateStatus('✅ Image Generated Successfully', 'connected');
+                isGenerating = false;
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generate Image';
+            });
+
+            // Generation error
+            socket.on('generation_error', (data) => {
+                addLog('❌ Generation error: ' + data.message);
+                addLog('❌ Error details: ' + data.error);
+                updateStatus('❌ Generation Failed', 'disconnected');
+                isGenerating = false;
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generate Image';
+                alert('Generation failed: ' + data.message);
+            });
+        }
+
+        function generateImage() {
+            if (!socket || !socket.connected) {
+                alert('Not connected to server. Please connect first.');
+                return;
+            }
+
+            if (isGenerating) {
+                alert('Image generation already in progress. Please wait.');
+                return;
+            }
+
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            if (!userId) {
+                alert('User ID not available. Please reconnect.');
+                return;
+            }
+
+            addLog('📤 Sending generation request...');
+            addLog('👤 User ID: ' + userId);
+            addLog('📝 Prompt: ' + prompt);
+
+            // Send the generate_image event
+            socket.emit('generate_image', {
+                user_id: userId,
+                prompt: prompt
+            });
+
+            isGenerating = true;
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').textContent = 'Generating...';
+            
+            addLog('✅ Request sent successfully!');
+        }
+
+        // Auto-focus prompt input when loaded
+        window.onload = function() {
+            addLog('🚀 Test client loaded and ready!');
+            addLog('📝 Enter your ngrok URL and click Connect');
+        };
+    </script>
+</body>
+</html>
