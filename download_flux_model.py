@@ -271,7 +271,7 @@ def main():
     
     print_summary()
 
-if __name__ == "____main__":
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
