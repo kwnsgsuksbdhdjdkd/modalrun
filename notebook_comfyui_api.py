@@ -54,7 +54,7 @@ DEFAULT_WORKFLOW = {
     },
     "4": {
         "inputs": {
-            "ckpt_name": "flux1-schnell.safetensors"
+            "ckpt_name": "flux1-krea-dev.safetensors"
         },
         "class_type": "CheckpointLoaderSimple"
     },
