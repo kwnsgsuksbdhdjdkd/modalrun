@@ -211,10 +211,20 @@ def get_image(filename, subfolder, folder_type):
 
 def wait_for_completion(prompt_id):
     """Wait for image generation to complete"""
-    max_wait = 300  # 5 minutes
+    max_wait = 900  # Increased to 15 minutes for high-quality generation
     start_time = time.time()
+    last_progress_log = 0
+    
+    log(f"⏳ Waiting for high-quality generation (max {max_wait}s)...")
     
     while time.time() - start_time < max_wait:
+        elapsed = time.time() - start_time
+        
+        # Log progress every 30 seconds
+        if elapsed - last_progress_log >= 30:
+            log(f"⏱️  Generation in progress... {int(elapsed)}s elapsed (quality mode: 30 steps @ 1536×1536)")
+            last_progress_log = elapsed
+        
         try:
             response = requests.get(f"http://localhost:{PORT}/history/{prompt_id}")
             history = response.json()
@@ -238,6 +248,7 @@ def wait_for_completion(prompt_id):
                 if outputs:
                     for node_id, node_output in outputs.items():
                         if "images" in node_output:
+                            log(f"✅ High-quality image generation complete after {int(elapsed)}s!")
                             return node_output["images"][0]
         except Exception as e:
             log(f"⚠️  Error checking history: {e}")
@@ -342,9 +353,12 @@ def _handle_generation_request(data, event_name):
         # Send immediate acknowledgment
         emit('generation_started', {
             'status': 'started',
-            'message': f'Generating image for: "{prompt}"',
-            'estimated_time': '40-70 seconds',
-            'prompt': prompt
+            'message': f'Generating high-quality image for: "{prompt}"',
+            'estimated_time': '120-180 seconds (high quality mode: 30 steps @ 1536×1536)',
+            'prompt': prompt,
+            'quality_mode': 'high',
+            'resolution': '1536×1536',
+            'steps': 30
         })
         log(f"✅ Sent generation_started acknowledgment to user {user_id[:8]}...")
         log(f"✅ Generation task queued for background processing")
