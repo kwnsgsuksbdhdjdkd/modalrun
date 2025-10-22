@@ -48,13 +48,14 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Track connected users {user_id: session_id}
 connected_users = {}
 
-# Default FLUX workflow
+# High-Quality FLUX workflow
+# Optimized for better detail, resolution, and rendering quality
 DEFAULT_WORKFLOW = {
     "3": {
         "inputs": {
             "seed": 42,
-            "steps": 4,
-            "cfg": 1,
+            "steps": 30,  # Increased from 4 to 30 for much better quality
+            "cfg": 3.5,   # Increased from 1 to 3.5 for better prompt adherence
             "sampler_name": "euler",
             "scheduler": "simple",
             "denoise": 1,
@@ -75,22 +76,22 @@ DEFAULT_WORKFLOW = {
     },
     "5": {
         "inputs": {
-            "width": 1024,
-            "height": 1024,
+            "width": 1536,  # Increased from 1024 to 1536 for higher resolution
+            "height": 1536, # Increased from 1024 to 1536 for higher resolution
             "batch_size": 1
         },
         "class_type": "EmptyLatentImage"
     },
     "6": {
         "inputs": {
-            "text": "a beautiful landscape",
+            "text": "a beautiful landscape, high quality, detailed, 8k, professional photography",
             "clip": ["4", 0]
         },
         "class_type": "CLIPTextEncode"
     },
     "7": {
         "inputs": {
-            "text": "",
+            "text": "low quality, blurry, pixelated, low resolution, distorted, ugly, deformed",
             "clip": ["4", 0]
         },
         "class_type": "CLIPTextEncode"
@@ -117,7 +118,7 @@ DEFAULT_WORKFLOW = {
     },
     "9": {
         "inputs": {
-            "filename_prefix": "ComfyUI",
+            "filename_prefix": "ComfyUI_HQ",
             "images": ["8", 0]
         },
         "class_type": "SaveImage"
@@ -373,10 +374,14 @@ def generate_and_emit(user_id, prompt):
     try:
         log(f"⌛ Starting generation for user {user_id[:8]}...")
         
-        # Update workflow with prompt
+        # Enhance prompt with quality keywords
+        enhanced_prompt = f"{prompt}, high quality, detailed, sharp focus, professional, 8k uhd, masterpiece"
+        log(f"✨ Enhanced prompt: '{enhanced_prompt}'")
+        
+        # Update workflow with enhanced prompt
         workflow = DEFAULT_WORKFLOW.copy()
         if "6" in workflow:
-            workflow["6"]["inputs"]["text"] = prompt
+            workflow["6"]["inputs"]["text"] = enhanced_prompt
         
         # Queue the prompt
         result = queue_prompt(workflow)
