@@ -48,6 +48,16 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Track connected users {user_id: session_id}
 connected_users = {}
 
+# Aspect ratio presets (Fixed pixel budget ~2.4M pixels for consistent quality/speed)
+ASPECT_RATIOS = {
+    "1:1": (1536, 1536),    # Square - Instagram, general
+    "16:9": (2048, 1152),   # Landscape - YouTube, monitors
+    "9:16": (1152, 2048),   # Portrait - TikTok, mobile
+    "4:3": (1776, 1328),    # Standard - Classic photos
+    "3:2": (1888, 1256),    # Photo - DSLR standard
+    "21:9": (2400, 1024),   # Cinematic - Ultra-wide
+}
+
 # High-Quality FLUX workflow
 # Optimized for better detail, resolution, and rendering quality
 DEFAULT_WORKFLOW = {
@@ -333,6 +343,7 @@ def _handle_generation_request(data, event_name):
         
         user_id = data.get('user_id') if isinstance(data, dict) else None
         prompt = data.get('prompt', 'a beautiful landscape') if isinstance(data, dict) else 'a beautiful landscape'
+        aspect_ratio = data.get('aspect_ratio', '1:1') if isinstance(data, dict) else '1:1'  # NEW!
         
         if not user_id:
             log(f"⚠️ No user_id in data. Data keys: {data.keys() if isinstance(data, dict) else 'N/A'}")
@@ -343,22 +354,32 @@ def _handle_generation_request(data, event_name):
             })
             return
         
+        # Get dimensions from aspect ratio
+        if aspect_ratio not in ASPECT_RATIOS:
+            log(f"⚠️ Invalid aspect ratio '{aspect_ratio}', defaulting to 1:1")
+            aspect_ratio = '1:1'
+        
+        width, height = ASPECT_RATIOS[aspect_ratio]
+        
         log(f"🎨 SocketIO generation request from user {user_id[:8]}...: '{prompt}'")
+        log(f"📐 Aspect ratio: {aspect_ratio} → {width}×{height} ({width*height:,} pixels)")
         log(f"👤 User session ID: {connected_users.get(user_id, 'NOT FOUND')}")
         
         # Run generation in background thread to keep socket alive
         log(f"🚀 Starting background generation thread...")
-        threading.Thread(target=generate_and_emit, args=(user_id, prompt), daemon=True).start()
+        threading.Thread(target=generate_and_emit, args=(user_id, prompt, width, height, aspect_ratio), daemon=True).start()
         
         # Send immediate acknowledgment
         emit('generation_started', {
             'status': 'started',
             'message': f'Generating high-quality image for: "{prompt}"',
-            'estimated_time': '120-180 seconds (high quality mode: 30 steps @ 1536×1536)',
+            'estimated_time': f'120-180 seconds (high quality mode: 30 steps @ {width}×{height})',
             'prompt': prompt,
             'quality_mode': 'high',
-            'resolution': '1536×1536',
-            'steps': 30
+            'resolution': f'{width}×{height}',
+            'aspect_ratio': aspect_ratio,
+            'steps': 30,
+            'total_pixels': width * height
         })
         log(f"✅ Sent generation_started acknowledgment to user {user_id[:8]}...")
         log(f"✅ Generation task queued for background processing")
@@ -383,17 +404,26 @@ def handle_generate(data):
     """Handle real-time image generation request via WebSocket (event: generate)"""
     _handle_generation_request(data, 'generate')
 
-def generate_and_emit(user_id, prompt):
+def generate_and_emit(user_id, prompt, width=1536, height=1536, aspect_ratio="1:1"):
     """Generate image and emit to specific user"""
     try:
         log(f"⌛ Starting generation for user {user_id[:8]}...")
+        log(f"📐 Resolution: {width}×{height} (aspect ratio: {aspect_ratio})")
         
         # Enhance prompt with quality keywords
         enhanced_prompt = f"{prompt}, high quality, detailed, sharp focus, professional, 8k uhd, masterpiece"
         log(f"✨ Enhanced prompt: '{enhanced_prompt}'")
         
-        # Update workflow with enhanced prompt
+        # Update workflow with enhanced prompt and dynamic dimensions
         workflow = DEFAULT_WORKFLOW.copy()
+        
+        # Set dynamic dimensions
+        if "5" in workflow:
+            workflow["5"]["inputs"]["width"] = width
+            workflow["5"]["inputs"]["height"] = height
+            log(f"✅ Workflow updated with {width}×{height} dimensions")
+        
+        # Set enhanced prompt
         if "6" in workflow:
             workflow["6"]["inputs"]["text"] = enhanced_prompt
         
